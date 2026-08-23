@@ -1,0 +1,4 @@
+import { catalogErrorResponse, requireCatalogActor } from "../../../db/catalog-repository";
+import { createReferral, listMyReferrals, listReferralQueue } from "../../../db/referral-repository";
+export async function GET(request:Request){try{const actor=await requireCatalogActor();const queue=new URL(request.url).searchParams.get("scope")==="queue";return Response.json({referrals:queue?await listReferralQueue(actor):await listMyReferrals(actor)});}catch(error){return catalogErrorResponse(error);}}
+export async function POST(request:Request){try{const actor=await requireCatalogActor();const body=await request.json() as {listingId?:string;summary?:string};if(!body.listingId)return Response.json({error:"Choose a service before continuing."},{status:400});return Response.json({referral:await createReferral(actor,body.listingId,body.summary??"")},{status:201});}catch(error){return catalogErrorResponse(error);}}

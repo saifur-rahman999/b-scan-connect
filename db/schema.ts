@@ -140,7 +140,7 @@ export const recommendationResults = sqliteTable("recommendation_results", {
 }, (table) => [index("recommendations_user_score_idx").on(table.userId, table.profileVersion, table.score)]);
 
 export const referrals = sqliteTable("referrals", {
-  id: text("id").primaryKey(), reference: text("reference").notNull(), userId: text("user_id").notNull().references(() => users.id), serviceId: text("service_id").notNull().references(() => services.id),
+  id: text("id").primaryKey(), reference: text("reference").notNull(), userId: text("user_id").notNull().references(() => users.id), serviceId: text("service_id").references(() => services.id), catalogListingId: text("catalog_listing_id").references(() => catalogListings.id),
   organizationId: text("organization_id").references(() => organizations.id), assignedOfficerId: text("assigned_officer_id").references(() => users.id),
   status: text("status").notNull().default("SUBMITTED"), requestSummary: text("request_summary").notNull(), cancelledAt: text("cancelled_at"), ...timestamps,
 }, (table) => [uniqueIndex("referrals_reference_idx").on(table.reference), index("referrals_queue_idx").on(table.status, table.assignedOfficerId, table.updatedAt)]);
