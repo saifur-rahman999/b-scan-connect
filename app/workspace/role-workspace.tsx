@@ -111,12 +111,16 @@ const nextActionsByRole: Record<Role, { title: string; detail: string; action: s
 
 function Sidebar({ role }: { role: Role }) {
   const data = roleData[role];
-  const userLinks: Record<string, string> = { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved" };
+  const workspaceLinks: Partial<Record<Role, Record<string, string>>> = {
+    user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals" },
+    officer: { "New referrals": "/workspace/referrals/queue", "Assigned referrals": "/workspace/referrals/queue" },
+    representative: { Referrals: "/workspace/referrals/queue" }, admin: { Referrals: "/workspace/referrals/queue" },
+  };
   return (
     <aside className="workspace-sidebar">
       <Link className="workspace-brand" href="/" aria-label="Return to B-SCAN Connect home"><span>B</span><b>B-SCAN <small>Connect</small></b></Link>
       <nav aria-label={`${data.label} navigation`}>
-        {data.nav.map((item, index) => role === "user" && userLinks[item] ? <Link href={userLinks[item]} key={item}><i aria-hidden="true">{["⌂","○","✦","♡"][index] ?? "·"}</i>{item}</Link> : <button className={index === 0 ? "active" : ""} key={item} type="button"><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}{item === "Notifications" && <em>4</em>}</button>)}
+        {data.nav.map((item, index) => workspaceLinks[role]?.[item] ? <Link href={workspaceLinks[role]?.[item] ?? "/workspace"} key={item}><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}</Link> : <button className={index === 0 ? "active" : ""} key={item} type="button"><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}{item === "Notifications" && <em>4</em>}</button>)}
       </nav>
       <div className="sidebar-help"><span aria-hidden="true">?</span><b>Need assistance?</b><p>View accessible help and guidance.</p><button type="button">Open help</button></div>
       <div className="sidebar-user"><span>{data.initials}</span><div><b>{data.person}</b><small>{data.label}</small></div><i aria-hidden="true">⋮</i></div>
