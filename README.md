@@ -4,15 +4,16 @@ B-SCAN Connect helps persons with disabilities discover accessible support servi
 
 ## Current milestone
 
-Phase 1 established:
+The current release includes:
 
-- the public product experience and visual design system;
-- role-aware stakeholder workspaces;
-- accessibility foundations, including skip navigation, visible focus, larger text, high contrast and reduced motion;
-- the relational data model and initial database migration;
-- role boundaries and workflow conventions.
-
-Phase 2 adds the searchable public catalogue, listing detail pages, organization content management and the administrator approval queue.
+- the public product experience, searchable catalogue and listing details;
+- role-aware stakeholder workspaces and accessible interface controls;
+- persistent member profiles, explainable recommendations and saved items;
+- organization content creation and administrator approval workflows;
+- member referrals, staff queues, messages and immutable timelines;
+- job and learning applications with selection-stage tracking;
+- an in-app notification centre for referral and application updates;
+- automated lint, production-build and route checks in GitHub Actions.
 
 ## Application surfaces
 
@@ -20,6 +21,9 @@ Phase 2 adds the searchable public catalogue, listing detail pages, organization
 - `/discover` — searchable services, jobs and learning catalogue
 - `/discover/[slug]` — complete listing details
 - `/workspace` — authenticated stakeholder workspace
+- `/workspace/referrals` — member referral tracking
+- `/workspace/applications` — member application tracking
+- `/workspace/notifications` — personal notification centre
 
 ## Stack
 
