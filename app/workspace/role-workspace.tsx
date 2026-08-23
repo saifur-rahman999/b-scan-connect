@@ -111,11 +111,12 @@ const nextActionsByRole: Record<Role, { title: string; detail: string; action: s
 
 function Sidebar({ role }: { role: Role }) {
   const data = roleData[role];
+  const userLinks: Record<string, string> = { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved" };
   return (
     <aside className="workspace-sidebar">
       <Link className="workspace-brand" href="/" aria-label="Return to B-SCAN Connect home"><span>B</span><b>B-SCAN <small>Connect</small></b></Link>
       <nav aria-label={`${data.label} navigation`}>
-        {data.nav.map((item, index) => <button className={index === 0 ? "active" : ""} key={item} type="button"><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}{item === "Notifications" && <em>4</em>}</button>)}
+        {data.nav.map((item, index) => role === "user" && userLinks[item] ? <Link href={userLinks[item]} key={item}><i aria-hidden="true">{["⌂","○","✦","♡"][index] ?? "·"}</i>{item}</Link> : <button className={index === 0 ? "active" : ""} key={item} type="button"><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}{item === "Notifications" && <em>4</em>}</button>)}
       </nav>
       <div className="sidebar-help"><span aria-hidden="true">?</span><b>Need assistance?</b><p>View accessible help and guidance.</p><button type="button">Open help</button></div>
       <div className="sidebar-user"><span>{data.initials}</span><div><b>{data.person}</b><small>{data.label}</small></div><i aria-hidden="true">⋮</i></div>
@@ -310,7 +311,7 @@ export function StakeholderWorkspace({ accountName }: { accountName: string }) {
 
         <div className="workspace-content">
           {view === "content" && (role === "representative" || role === "admin") ? <ContentOperations key={role} role={role} onBack={() => setView("dashboard")} /> : <>
-          <div className="workspace-title-row"><div><p className="workspace-kicker">Dashboard overview</p><h1>{data.greeting}</h1><p>{data.subtitle}</p></div><button className="button" type="button" onClick={() => (role === "representative" || role === "admin") && setView("content")}>{role === "user" ? "Complete my profile" : role === "officer" ? "Review new referrals" : role === "representative" ? "Manage listings" : "Open approval queue"} →</button></div>
+          <div className="workspace-title-row"><div><p className="workspace-kicker">Dashboard overview</p><h1>{data.greeting}</h1><p>{data.subtitle}</p></div>{role === "user" ? <Link className="button" href="/workspace/profile">Complete my profile →</Link> : <button className="button" type="button" onClick={() => (role === "representative" || role === "admin") && setView("content")}>{role === "officer" ? "Review new referrals" : role === "representative" ? "Manage listings" : "Open approval queue"} →</button>}</div>
           <div className="workspace-stats">
             {data.stats.map((stat, index) => <article key={stat.label}><div className={`workspace-stat-symbol ${stat.tone ?? ""}`} aria-hidden="true">{["◔","✦","↗","▤"][index]}</div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></article>)}
           </div>

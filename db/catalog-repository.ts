@@ -3,8 +3,8 @@ import { catalogItems, type CatalogItem, type CatalogKind } from "../data/catalo
 import { getChatGPTUser } from "../app/chatgpt-auth";
 import { resolveCatalogTransition, type ActorRole, type CatalogAction, type CatalogStatus } from "./catalog-workflow";
 
-type Actor = { id: string; email: string; displayName: string; role: ActorRole };
-type CatalogRow = {
+export type Actor = { id: string; email: string; displayName: string; role: ActorRole };
+export type CatalogRow = {
   id: string;
   reference: string;
   slug: string;
@@ -39,7 +39,7 @@ function parseList(value: string | null): string[] {
   }
 }
 
-function mapRow(row: CatalogRow): CatalogItem {
+export function mapCatalogRow(row: CatalogRow): CatalogItem {
   return {
     id: row.id,
     reference: row.reference,
@@ -102,14 +102,14 @@ export async function listPublishedCatalog(): Promise<CatalogItem[]> {
   const result = await getRawDb().prepare(`SELECT * FROM catalog_listings
     WHERE status = 'PUBLISHED'
     ORDER BY featured DESC, updated_at DESC, title ASC`).all<CatalogRow>();
-  return result.results.map(mapRow);
+  return result.results.map(mapCatalogRow);
 }
 
 export async function getPublishedCatalogBySlug(slug: string): Promise<CatalogItem | null> {
   await ensureCatalogSeeded();
   const row = await getRawDb().prepare(`SELECT * FROM catalog_listings
     WHERE slug = ? AND status = 'PUBLISHED' LIMIT 1`).bind(slug).first<CatalogRow>();
-  return row ? mapRow(row) : null;
+  return row ? mapCatalogRow(row) : null;
 }
 
 export async function requireCatalogActor(): Promise<Actor> {
@@ -138,7 +138,7 @@ export async function listManagedCatalog(actor: Actor, scope: "admin" | "organiz
   const result = scope === "admin"
     ? await d1.prepare("SELECT * FROM catalog_listings WHERE status != 'ARCHIVED' ORDER BY updated_at DESC").all<CatalogRow>()
     : await d1.prepare("SELECT * FROM catalog_listings WHERE created_by_id = ? AND status != 'ARCHIVED' ORDER BY updated_at DESC").bind(actor.id).all<CatalogRow>();
-  return result.results.map(mapRow);
+  return result.results.map(mapCatalogRow);
 }
 
 export type CreateCatalogInput = {
@@ -189,7 +189,7 @@ export async function createCatalogDraft(actor: Actor, input: CreateCatalogInput
     ).run();
   const row = await d1.prepare("SELECT * FROM catalog_listings WHERE id = ?").bind(id).first<CatalogRow>();
   if (!row) throw new CatalogError("The listing could not be saved.", 500);
-  return mapRow(row);
+  return mapCatalogRow(row);
 }
 
 export async function transitionCatalogListing(actor: Actor, id: string, action: CatalogAction, comment?: string): Promise<CatalogItem> {
@@ -222,7 +222,7 @@ export async function transitionCatalogListing(actor: Actor, id: string, action:
   if (Number(results[0].meta.changes ?? 0) !== 1) throw new CatalogError("The listing changed before this action completed. Refresh and try again.", 409);
   const row = await d1.prepare("SELECT * FROM catalog_listings WHERE id = ?").bind(id).first<CatalogRow>();
   if (!row) throw new CatalogError("The listing could not be reloaded.", 500);
-  return mapRow(row);
+  return mapCatalogRow(row);
 }
 
 export class CatalogError extends Error {
