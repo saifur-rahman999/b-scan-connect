@@ -13,6 +13,8 @@ The current release includes:
 - member referrals, staff queues, messages and immutable timelines;
 - job and learning applications with selection-stage tracking;
 - an in-app notification centre for referral and application updates;
+- administrator dashboards with live operational analytics, user access controls and organization management;
+- member feedback reporting with an administrator assignment and resolution queue;
 - automated lint, production-build and route checks in GitHub Actions.
 
 ## Application surfaces
@@ -24,6 +26,11 @@ The current release includes:
 - `/workspace/referrals` — member referral tracking
 - `/workspace/applications` — member application tracking
 - `/workspace/notifications` — personal notification centre
+- `/workspace/feedback` — member feedback and response history
+- `/workspace/admin` — administrator overview and operational analytics
+- `/workspace/admin/users` — account access and role management
+- `/workspace/admin/organizations` — organization and representative management
+- `/workspace/admin/feedback` — feedback assignment and resolution queue
 
 ## Stack
 

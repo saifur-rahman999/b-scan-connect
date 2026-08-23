@@ -1,0 +1,3 @@
+import { setOrganizationRepresentative, updateAdminOrganization } from "../../../../../db/admin-repository";
+import { catalogErrorResponse, requireCatalogActor } from "../../../../../db/catalog-repository";
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){try{const body=await request.json() as Record<string,unknown>;const actor=await requireCatalogActor();const id=(await params).id;return Response.json(body.userId?{assignment:await setOrganizationRepresentative(actor,id,body)}:{organization:await updateAdminOrganization(actor,id,body)});}catch(error){return catalogErrorResponse(error);}}

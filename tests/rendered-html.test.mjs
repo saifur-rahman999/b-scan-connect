@@ -30,6 +30,7 @@ test("renders the stakeholder workspace route", async () => {
   assert.match(html, /Stakeholder Workspace \| B-SCAN Connect/i);
   assert.match(html, /Switch stakeholder role/i);
   assert.match(html, /Recommended next actions/i);
+  assert.match(html, /href="\/workspace\/feedback"/i);
   assert.doesNotMatch(html, /Connected course of action/i);
   assert.doesNotMatch(html, /demo|prototype|demonstration|fictional/i);
 });
