@@ -112,9 +112,9 @@ const nextActionsByRole: Record<Role, { title: string; detail: string; action: s
 function Sidebar({ role }: { role: Role }) {
   const data = roleData[role];
   const workspaceLinks: Partial<Record<Role, Record<string, string>>> = {
-    user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals" },
+    user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals", "My applications": "/workspace/applications", Notifications: "/workspace/notifications" },
     officer: { "New referrals": "/workspace/referrals/queue", "Assigned referrals": "/workspace/referrals/queue" },
-    representative: { Referrals: "/workspace/referrals/queue" }, admin: { Referrals: "/workspace/referrals/queue" },
+    representative: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Notifications: "/workspace/notifications" }, admin: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue" },
   };
   return (
     <aside className="workspace-sidebar">
@@ -309,7 +309,7 @@ export function StakeholderWorkspace({ accountName }: { accountName: string }) {
             {(Object.keys(roleData) as Role[]).map((key) => <button type="button" className={role === key ? "active" : ""} aria-pressed={role === key} onClick={() => { setRole(key); setView("dashboard"); }} key={key}>{roleData[key].label.replace("B-SCAN ", "")}</button>)}
           </div>
           <AccessibilityTools />
-          <button className="top-icon" type="button" aria-label="Notifications">♢<em>4</em></button>
+          <Link className="top-icon" href="/workspace/notifications" aria-label="Open notifications">♢</Link>
           <div className="top-avatar" title={accountName}>{data.initials}</div>
         </header>
 

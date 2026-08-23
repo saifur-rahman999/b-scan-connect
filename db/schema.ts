@@ -161,8 +161,8 @@ export const referralAppointments = sqliteTable("referral_appointments", {
 }, (table) => [index("referral_appointments_idx").on(table.referralId, table.scheduledAt)]);
 
 export const applications = sqliteTable("applications", {
-  id: text("id").primaryKey(), reference: text("reference").notNull(), userId: text("user_id").notNull().references(() => users.id), organizationId: text("organization_id").notNull().references(() => organizations.id),
-  applicationType: text("application_type").notNull(), targetId: text("target_id").notNull(), stage: text("stage").notNull().default("INTERESTED"), preparationInfo: text("preparation_info"), privateNotes: text("private_notes"), submittedAt: text("submitted_at"), withdrawnAt: text("withdrawn_at"), ...timestamps,
+  id: text("id").primaryKey(), reference: text("reference").notNull(), userId: text("user_id").notNull().references(() => users.id), organizationId: text("organization_id").references(() => organizations.id),
+  catalogListingId: text("catalog_listing_id").references(() => catalogListings.id), applicationType: text("application_type").notNull(), targetId: text("target_id").notNull(), stage: text("stage").notNull().default("INTERESTED"), preparationInfo: text("preparation_info"), privateNotes: text("private_notes"), submittedAt: text("submitted_at"), withdrawnAt: text("withdrawn_at"), ...timestamps,
 }, (table) => [uniqueIndex("applications_reference_idx").on(table.reference), index("applications_pipeline_idx").on(table.organizationId, table.applicationType, table.stage)]);
 
 export const applicationEvents = sqliteTable("application_events", {

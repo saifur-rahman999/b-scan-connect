@@ -50,7 +50,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
             {item.deadline && <div><small>Deadline</small><strong>{item.deadline}</strong></div>}
             <div><small>Delivery</small><strong>{item.deliveryMode}</strong></div>
             <div><small>Location</small><strong>{item.district}</strong></div>
-            <Link className="button" href={item.kind === "service" ? `/workspace/referrals/new?listing=${encodeURIComponent(item.slug)}` : "/workspace"}>{item.kind === "service" ? "Request support" : "Continue in workspace"} →</Link>
+            <Link className="button" href={item.kind === "service" ? `/workspace/referrals/new?listing=${encodeURIComponent(item.slug)}` : `/workspace/applications/new?listing=${encodeURIComponent(item.slug)}`}>{item.kind === "service" ? "Request support" : "Start application"} →</Link>
             <SaveListingButton listingId={item.id} title={item.title} />
             <p>Your information is not shared until you review and confirm the next step.</p>
           </aside>

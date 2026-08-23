@@ -50,3 +50,12 @@ test("renders a listing detail page", async () => {
   assert.match(html, /Accessible Digital Skills Bootcamp/i);
   assert.match(html, /Accessibility and adjustments/i);
 });
+
+test("starts the application journey from an opportunity", async () => {
+  const response = await render("/discover/junior-customer-support-associate");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Junior Customer Support Associate/i);
+  assert.match(html, /Start application/i);
+  assert.match(html, /\/workspace\/applications\/new\?listing=junior-customer-support-associate/i);
+});

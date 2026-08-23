@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AccessibilityTools } from "../accessibility-tools";
 
-export function MemberNav({ active }: { active: "workspace" | "profile" | "recommendations" | "saved" | "referrals" }) {
+export function MemberNav({ active }: { active: "workspace" | "profile" | "recommendations" | "saved" | "referrals" | "applications" | "notifications" }) {
   return <header className="member-header"><div className="shell member-header-inner">
     <Link className="brand" href="/"><span className="brand-mark">B</span><span><strong>B-SCAN</strong><small>Connect</small></span></Link>
     <nav aria-label="Member workspace">
@@ -10,6 +10,8 @@ export function MemberNav({ active }: { active: "workspace" | "profile" | "recom
       <Link className={active === "recommendations" ? "active" : ""} href="/workspace/recommendations">Recommendations</Link>
       <Link className={active === "saved" ? "active" : ""} href="/workspace/saved">Saved items</Link>
       <Link className={active === "referrals" ? "active" : ""} href="/workspace/referrals">My referrals</Link>
+      <Link className={active === "applications" ? "active" : ""} href="/workspace/applications">My applications</Link>
+      <Link className={active === "notifications" ? "active" : ""} href="/workspace/notifications">Notifications</Link>
     </nav>
     <div className="member-header-actions"><AccessibilityTools /><Link href="/discover">Discover</Link></div>
   </div></header>;
