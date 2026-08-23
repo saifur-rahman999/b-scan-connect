@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AccessibilityTools } from "../accessibility-tools";
+import { SaveListingButton } from "../save-listing-button";
 import { CatalogItem, CatalogKind, kindLabels } from "../../data/catalog";
 
 type Sort = "recommended" | "deadline" | "title";
@@ -13,7 +14,6 @@ export function DiscoveryCatalog({ items }: { items: CatalogItem[] }) {
   const [location, setLocation] = useState("all");
   const [delivery, setDelivery] = useState("all");
   const [sort, setSort] = useState<Sort>("recommended");
-  const [saved, setSaved] = useState<string[]>([]);
 
   const locations = useMemo(() => [...new Set(items.map((item) => item.district))].sort(), [items]);
   const results = useMemo(() => {
@@ -73,7 +73,7 @@ export function DiscoveryCatalog({ items }: { items: CatalogItem[] }) {
               <div className="catalog-grid">
                 {results.map((item) => (
                   <article className="catalog-card" key={item.slug}>
-                    <div className="catalog-card-top"><span className={`kind-badge ${item.kind}`}>{kindLabels[item.kind]}</span><button type="button" className={saved.includes(item.slug) ? "saved" : ""} onClick={() => setSaved((current) => current.includes(item.slug) ? current.filter((slug) => slug !== item.slug) : [...current, item.slug])} aria-label={saved.includes(item.slug) ? `Remove ${item.title} from saved items` : `Save ${item.title}`} aria-pressed={saved.includes(item.slug)}>{saved.includes(item.slug) ? "♥ Saved" : "♡ Save"}</button></div>
+                    <div className="catalog-card-top"><span className={`kind-badge ${item.kind}`}>{kindLabels[item.kind]}</span><SaveListingButton listingId={item.id} title={item.title} compact /></div>
                     <h3><Link href={`/discover/${item.slug}`}>{item.title}</Link></h3>
                     <p className="catalog-org">{item.organization}</p>
                     <p className="catalog-summary">{item.summary}</p>

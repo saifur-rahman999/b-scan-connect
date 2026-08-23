@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalogItem, kindLabels } from "../../../data/catalog";
 import { getPublishedCatalogBySlug } from "../../../db/catalog-repository";
+import { SaveListingButton } from "../../save-listing-button";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
             <div><small>Delivery</small><strong>{item.deliveryMode}</strong></div>
             <div><small>Location</small><strong>{item.district}</strong></div>
             <Link className="button" href="/workspace">{item.kind === "service" ? "Request support" : "Continue in workspace"} →</Link>
-            <button type="button" className="save-detail">♡ Save this listing</button>
+            <SaveListingButton listingId={item.id} title={item.title} />
             <p>Your information is not shared until you review and confirm the next step.</p>
           </aside>
         </div>
