@@ -112,9 +112,9 @@ const nextActionsByRole: Record<Role, { title: string; detail: string; action: s
 function Sidebar({ role }: { role: Role }) {
   const data = roleData[role];
   const workspaceLinks: Partial<Record<Role, Record<string, string>>> = {
-    user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals", "My applications": "/workspace/applications", Notifications: "/workspace/notifications" },
+    user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals", "My applications": "/workspace/applications", Notifications: "/workspace/notifications", Feedback: "/workspace/feedback" },
     officer: { "New referrals": "/workspace/referrals/queue", "Assigned referrals": "/workspace/referrals/queue" },
-    representative: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Notifications: "/workspace/notifications" }, admin: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue" },
+    representative: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Notifications: "/workspace/notifications" }, admin: { Dashboard: "/workspace/admin", Users: "/workspace/admin/users", Organizations: "/workspace/admin/organizations", Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Feedback: "/workspace/admin/feedback", Analytics: "/workspace/admin" },
   };
   return (
     <aside className="workspace-sidebar">
