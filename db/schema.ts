@@ -95,6 +95,40 @@ export const contentApprovalEvents = sqliteTable("content_approval_events", {
   actorId: text("actor_id").notNull().references(() => users.id), comment: text("comment"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("approval_entity_idx").on(table.entityType, table.entityId, table.createdAt)]);
 
+export const catalogListings = sqliteTable("catalog_listings", {
+  id: text("id").primaryKey(),
+  reference: text("reference").notNull(),
+  slug: text("slug").notNull(),
+  kind: text("kind", { enum: ["service", "job", "training", "education"] }).notNull(),
+  title: text("title").notNull(),
+  organizationName: text("organization_name").notNull(),
+  organizationId: text("organization_id").references(() => organizations.id),
+  district: text("district").notNull(),
+  division: text("division").notNull(),
+  deliveryMode: text("delivery_mode", { enum: ["In person", "Online", "Hybrid"] }).notNull(),
+  summary: text("summary").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  deadline: text("deadline"),
+  salary: text("salary"),
+  accessibility: text("accessibility", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
+  eligibility: text("eligibility", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
+  contact: text("contact").notNull(),
+  featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+  status: text("status", { enum: ["DRAFT", "SUBMITTED", "CHANGES_REQUESTED", "PUBLISHED", "CLOSED", "ARCHIVED"] }).notNull().default("DRAFT"),
+  createdById: text("created_by_id").references(() => users.id),
+  submittedAt: text("submitted_at"),
+  publishedAt: text("published_at"),
+  closedAt: text("closed_at"),
+  archivedAt: text("archived_at"),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("catalog_listings_reference_idx").on(table.reference),
+  uniqueIndex("catalog_listings_slug_idx").on(table.slug),
+  index("catalog_discovery_idx").on(table.status, table.kind, table.district),
+  index("catalog_management_idx").on(table.createdById, table.status, table.updatedAt),
+]);
+
 export const savedItems = sqliteTable("saved_items", {
   id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id), entityType: text("entity_type").notNull(), entityId: text("entity_id").notNull(), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [uniqueIndex("saved_user_item_idx").on(table.userId, table.entityType, table.entityId)]);

@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { catalogItems, getCatalogItem, kindLabels } from "../../../data/catalog";
+import { getCatalogItem, kindLabels } from "../../../data/catalog";
+import { getPublishedCatalogBySlug } from "../../../db/catalog-repository";
 
-export function generateStaticParams() {
-  return catalogItems.map((item) => ({ slug: item.slug }));
+export const dynamic = "force-dynamic";
+
+async function findListing(slug: string) {
+  try {
+    return await getPublishedCatalogBySlug(slug) ?? getCatalogItem(slug);
+  } catch {
+    return getCatalogItem(slug);
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const item = getCatalogItem(slug);
+  const item = await findListing(slug);
   if (!item) return { title: "Listing not found" };
   return {
     title: item.title,
@@ -21,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ListingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const item = getCatalogItem(slug);
+  const item = await findListing(slug);
   if (!item) notFound();
 
   return (

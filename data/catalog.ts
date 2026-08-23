@@ -1,6 +1,8 @@
 export type CatalogKind = "service" | "job" | "training" | "education";
 
 export type CatalogItem = {
+  id?: string;
+  reference?: string;
   slug: string;
   kind: CatalogKind;
   title: string;
@@ -17,6 +19,9 @@ export type CatalogItem = {
   contact: string;
   featured?: boolean;
   salary?: string;
+  status?: "DRAFT" | "SUBMITTED" | "CHANGES_REQUESTED" | "PUBLISHED" | "CLOSED" | "ARCHIVED";
+  submittedAt?: string;
+  updatedAt?: string;
 };
 
 export const catalogItems: CatalogItem[] = [

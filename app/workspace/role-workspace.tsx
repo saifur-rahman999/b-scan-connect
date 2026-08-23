@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityTools } from "../accessibility-tools";
+import type { CatalogItem } from "../../data/catalog";
 
 type Role = "user" | "officer" | "representative" | "admin";
 type WorkspaceView = "dashboard" | "content";
@@ -122,21 +123,115 @@ function Sidebar({ role }: { role: Role }) {
   );
 }
 
-const initialSubmissions = [
-  { id: "BSC-C-2041", type: "Job", title: "Inclusive Operations Assistant", organization: "BrightDesk Bangladesh", submitted: "24 Aug 2026", status: "Submitted" },
-  { id: "BSC-C-2038", type: "Service", title: "Independent Living Workshop", organization: "Shobuj Pathways Foundation", submitted: "23 Aug 2026", status: "Submitted" },
-  { id: "BSC-C-2033", type: "Training", title: "Workplace Communication Series", organization: "Uddipan Learning Collective", submitted: "22 Aug 2026", status: "Changes requested" },
-];
+async function fetchManagedListings(role: "representative" | "admin") {
+  const response = await fetch(`/api/catalog/manage?scope=${role === "admin" ? "admin" : "organization"}`, { cache: "no-store" });
+  const result = await response.json() as { listings?: CatalogItem[]; error?: string };
+  if (!response.ok) throw new Error(result.error || "The catalogue could not be loaded.");
+  return result.listings ?? [];
+}
 
 function ContentOperations({ role, onBack }: { role: "representative" | "admin"; onBack: () => void }) {
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [submissions, setSubmissions] = useState<CatalogItem[]>([]);
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState("");
 
-  const updateStatus = (id: string, status: string) => {
-    setSubmissions((current) => current.map((item) => item.id === id ? { ...item, status } : item));
-    setNotice(status === "Published" ? "The listing is now published in the public catalogue." : "The organization has been notified and can revise the submission.");
+  const loadListings = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setSubmissions(await fetchManagedListings(role));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "The catalogue could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    let active = true;
+    fetchManagedListings(role)
+      .then((listings) => {
+        if (active) setSubmissions(listings);
+      })
+      .catch((loadError: unknown) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : "The catalogue could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [role]);
+
+  const createDraft = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusyId("create");
+    setError("");
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await fetch("/api/catalog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: form.get("kind"),
+          title: form.get("title"),
+          organization: form.get("organization"),
+          district: form.get("district"),
+          deliveryMode: form.get("deliveryMode"),
+          summary: form.get("summary"),
+          description: form.get("description"),
+          category: form.get("category"),
+          deadline: form.get("deadline"),
+          accessibility: form.getAll("accessibility"),
+          eligibility: String(form.get("eligibility") || "").split("\n").map((value) => value.trim()).filter(Boolean),
+        }),
+      });
+      const result = await response.json() as { listing?: CatalogItem; error?: string };
+      if (!response.ok) throw new Error(result.error || "The listing could not be saved.");
+      setNotice("The listing was saved as a draft. Submit it when the content is ready for review.");
+      setCreating(false);
+      await loadListings();
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "The listing could not be saved.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const transition = async (item: CatalogItem, action: "SUBMIT" | "PUBLISH" | "REQUEST_CHANGES" | "CLOSE" | "ARCHIVE") => {
+    if (!item.id) return;
+    setBusyId(item.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/catalog/${item.id}/transition`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, comment: action === "REQUEST_CHANGES" ? "Please review the listing details and accessibility information." : undefined }),
+      });
+      const result = await response.json() as { listing?: CatalogItem; error?: string };
+      if (!response.ok) throw new Error(result.error || "The listing could not be updated.");
+      const messages = {
+        SUBMIT: "The listing was submitted for administrator review.",
+        PUBLISH: "The listing is now published in the public catalogue.",
+        REQUEST_CHANGES: "The organization can now revise and resubmit the listing.",
+        CLOSE: "The listing was closed and removed from public search.",
+        ARCHIVE: "The listing was archived with its history preserved.",
+      };
+      setNotice(messages[action]);
+      await loadListings();
+    } catch (transitionError) {
+      setError(transitionError instanceof Error ? transitionError.message : "The listing could not be updated.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const formattedStatus = (status?: CatalogItem["status"]) => status ? status.toLowerCase().replaceAll("_", " ") : "Draft";
+  const formatDate = (value?: string) => value ? new Intl.DateTimeFormat("en-BD", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)) : "Not submitted";
 
   return (
     <section className="operations-surface">
@@ -146,32 +241,44 @@ function ContentOperations({ role, onBack }: { role: "representative" | "admin";
       </div>
 
       {notice && <div className="success-notice" role="status"><span>✓</span><div><b>Update complete</b><p>{notice}</p></div><button type="button" onClick={() => setNotice("")} aria-label="Dismiss notification">×</button></div>}
+      {error && <div className="error-notice" role="alert"><span>!</span><div><b>Action not completed</b><p>{error}</p></div><button type="button" onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
 
       {role === "representative" && creating && (
-        <form className="listing-form" onSubmit={(event) => { event.preventDefault(); setNotice("Your listing was saved as a draft. You can review it before submitting."); setCreating(false); }}>
+        <form className="listing-form" onSubmit={createDraft}>
           <div className="form-heading"><div><h2>New catalogue listing</h2><p>Required fields are marked with an asterisk.</p></div><span>Draft</span></div>
           <div className="form-grid">
-            <label><span>Listing type *</span><select required><option value="">Choose a type</option><option>Support service</option><option>Job</option><option>Training</option><option>Education</option></select></label>
-            <label><span>Title *</span><input required placeholder="Enter a clear listing title" /></label>
-            <label className="form-wide"><span>Summary *</span><textarea required rows={3} placeholder="Briefly describe what is offered and who it is for" /></label>
-            <label><span>District *</span><select required><option>Dhaka</option><option>Chattogram</option><option>Rajshahi</option><option>Khulna</option><option>Barishal</option><option>Sylhet</option><option>Rangpur</option><option>Mymensingh</option><option>Nationwide</option></select></label>
-            <label><span>Delivery mode *</span><select required><option>In person</option><option>Online</option><option>Hybrid</option></select></label>
-            <fieldset className="form-wide"><legend>Accessibility features</legend><div className="checkbox-grid">{["Step-free access", "Accessible washroom", "Live captions", "Screen-reader compatible", "Flexible schedule", "Support person welcome"].map((item) => <label key={item}><input type="checkbox" />{item}</label>)}</div></fieldset>
+            <label><span>Listing type *</span><select name="kind" required><option value="">Choose a type</option><option value="service">Support service</option><option value="job">Job</option><option value="training">Training</option><option value="education">Education</option></select></label>
+            <label><span>Title *</span><input name="title" required placeholder="Enter a clear listing title" /></label>
+            <label><span>Organization *</span><input name="organization" required defaultValue="Shobuj Pathways Foundation" /></label>
+            <label><span>Category</span><input name="category" placeholder="For example, employment support" /></label>
+            <label className="form-wide"><span>Summary *</span><textarea name="summary" required rows={3} placeholder="Briefly describe what is offered and who it is for" /></label>
+            <label className="form-wide"><span>Full description</span><textarea name="description" rows={4} placeholder="Add the complete service or opportunity details" /></label>
+            <label><span>District *</span><select name="district" required><option>Dhaka</option><option>Chattogram</option><option>Rajshahi</option><option>Khulna</option><option>Barishal</option><option>Sylhet</option><option>Rangpur</option><option>Mymensingh</option><option>Nationwide</option></select></label>
+            <label><span>Delivery mode *</span><select name="deliveryMode" required><option>In person</option><option>Online</option><option>Hybrid</option></select></label>
+            <label><span>Deadline</span><input name="deadline" placeholder="For example, 30 November 2026" /></label>
+            <label><span>Eligibility</span><textarea name="eligibility" rows={3} placeholder="Enter one requirement per line" /></label>
+            <fieldset className="form-wide"><legend>Accessibility features</legend><div className="checkbox-grid">{["Step-free access", "Accessible washroom", "Live captions", "Screen-reader compatible", "Flexible schedule", "Support person welcome"].map((item) => <label key={item}><input name="accessibility" value={item} type="checkbox" />{item}</label>)}</div></fieldset>
           </div>
-          <div className="form-actions"><button type="button" className="button button-secondary" onClick={() => setCreating(false)}>Cancel</button><button type="submit" className="button">Save draft</button></div>
+          <div className="form-actions"><button type="button" className="button button-secondary" onClick={() => setCreating(false)}>Cancel</button><button type="submit" className="button" disabled={busyId === "create"}>{busyId === "create" ? "Saving…" : "Save draft"}</button></div>
         </form>
       )}
 
       <div className="queue-card">
-        <div className="queue-toolbar"><div><h2>{role === "admin" ? "Waiting for review" : "Organization listings"}</h2><p>{submissions.length} active records</p></div><label><span className="sr-only">Filter records</span><select><option>All statuses</option><option>Submitted</option><option>Changes requested</option><option>Published</option></select></label></div>
+        <div className="queue-toolbar"><div><h2>{role === "admin" ? "Catalogue records" : "Organization listings"}</h2><p>{submissions.length} active records</p></div><button type="button" className="refresh-button" onClick={() => void loadListings()}>Refresh</button></div>
         <div className="queue-table" role="table" aria-label={role === "admin" ? "Approval queue" : "Organization listings"}>
           <div className="queue-row queue-header" role="row"><span role="columnheader">Listing</span><span role="columnheader">Organization</span><span role="columnheader">Submitted</span><span role="columnheader">Status</span><span role="columnheader">Actions</span></div>
-          {submissions.map((item) => (
-            <div className="queue-row" role="row" key={item.id}>
-              <span role="cell"><small>{item.type} · {item.id}</small><b>{item.title}</b></span>
-              <span role="cell">{item.organization}</span><span role="cell">{item.submitted}</span>
-              <span role="cell"><em className={item.status.toLowerCase().replace(" ", "-")}>{item.status}</em></span>
-              <span role="cell" className="queue-actions">{role === "admin" ? <><button type="button" onClick={() => updateStatus(item.id, "Published")}>Publish</button><button type="button" onClick={() => updateStatus(item.id, "Changes requested")}>Request changes</button></> : <><button type="button">Edit</button><button type="button">View</button></>}</span>
+          {loading ? <div className="queue-feedback" role="status"><div className="state-spinner" aria-hidden="true" />Loading catalogue records…</div> : submissions.length === 0 ? <div className="queue-feedback"><b>No listings yet</b><span>Create a listing to begin the review process.</span></div> : submissions.map((item) => (
+            <div className="queue-row" role="row" key={item.id ?? item.slug}>
+              <span role="cell"><small>{item.kind} · {item.reference}</small><b>{item.title}</b></span>
+              <span role="cell">{item.organization}</span><span role="cell">{formatDate(item.submittedAt ?? item.updatedAt)}</span>
+              <span role="cell"><em className={(item.status ?? "DRAFT").toLowerCase().replaceAll("_", "-")}>{formattedStatus(item.status)}</em></span>
+              <span role="cell" className="queue-actions">
+                {role === "representative" && ["DRAFT", "CHANGES_REQUESTED"].includes(item.status ?? "DRAFT") && <button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "SUBMIT")}>Submit</button>}
+                {role === "admin" && item.status === "SUBMITTED" && <><button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "PUBLISH")}>Publish</button><button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "REQUEST_CHANGES")}>Request changes</button></>}
+                {role === "admin" && item.status === "PUBLISHED" && <><button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "CLOSE")}>Close</button><button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "ARCHIVE")}>Archive</button></>}
+                {role === "admin" && item.status === "CLOSED" && <button disabled={busyId === item.id} type="button" onClick={() => void transition(item, "ARCHIVE")}>Archive</button>}
+                {!((role === "representative" && ["DRAFT", "CHANGES_REQUESTED"].includes(item.status ?? "DRAFT")) || (role === "admin" && ["SUBMITTED", "PUBLISHED", "CLOSED"].includes(item.status ?? ""))) && <span>No action needed</span>}
+              </span>
             </div>
           ))}
         </div>
@@ -202,7 +309,7 @@ export function StakeholderWorkspace({ accountName }: { accountName: string }) {
         </header>
 
         <div className="workspace-content">
-          {view === "content" && (role === "representative" || role === "admin") ? <ContentOperations role={role} onBack={() => setView("dashboard")} /> : <>
+          {view === "content" && (role === "representative" || role === "admin") ? <ContentOperations key={role} role={role} onBack={() => setView("dashboard")} /> : <>
           <div className="workspace-title-row"><div><p className="workspace-kicker">Dashboard overview</p><h1>{data.greeting}</h1><p>{data.subtitle}</p></div><button className="button" type="button" onClick={() => (role === "representative" || role === "admin") && setView("content")}>{role === "user" ? "Complete my profile" : role === "officer" ? "Review new referrals" : role === "representative" ? "Manage listings" : "Open approval queue"} →</button></div>
           <div className="workspace-stats">
             {data.stats.map((stat, index) => <article key={stat.label}><div className={`workspace-stat-symbol ${stat.tone ?? ""}`} aria-hidden="true">{["◔","✦","↗","▤"][index]}</div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></article>)}
