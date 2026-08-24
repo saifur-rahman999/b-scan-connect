@@ -5,16 +5,33 @@ async function dispatch(pathname = "/", init = {}, bindings = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${pathname}`);
   const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(new Request(`http://localhost${pathname}`, init), {
+  const env = {
     ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
     ...bindings,
-  }, { waitUntil() {}, passThroughOnException() {} });
+  };
+  globalThis.__testCloudflareEnv = env;
+  return worker.fetch(new Request(`http://localhost${pathname}`, init), env, { waitUntil() {}, passThroughOnException() {} });
 }
 
-async function render(pathname = "/", authenticated = false) {
+async function render(pathname = "/", authenticated = false, bindings = {}) {
   const headers = { accept: "text/html" };
   if (authenticated) headers["oai-authenticated-user-email"] = "owner@example.com";
-  return dispatch(pathname, { headers });
+  return dispatch(pathname, { headers }, bindings);
+}
+
+function actorDb(role, displayName) {
+  return {
+    prepare(sql) {
+      return {
+        bind() {
+          return {
+            first: async () => sql.includes("FROM users") ? { id: `${role.toLowerCase()}-1`, email: "owner@example.com", display_name: displayName, role } : null,
+            run: async () => ({ success: true, meta: { changes: 0 } }),
+          };
+        },
+      };
+    },
+  };
 }
 
 test("renders the product landing page", async () => {
@@ -33,16 +50,42 @@ test("renders the product landing page", async () => {
   assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/i);
 });
 
-test("renders the stakeholder workspace route", async () => {
-  const response = await render("/workspace", true);
+test("binds the member workspace to the authenticated account role", async () => {
+  const response = await render("/workspace", true, { DB: actorDb("PWD_USER", "Nadia Sultana") });
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Stakeholder Workspace \| B-SCAN Connect/i);
-  assert.match(html, /Switch stakeholder role/i);
+  assert.match(html, /Signed in as/i);
+  assert.match(html, /PwD user/i);
+  assert.match(html, /Welcome, Nadia/i);
   assert.match(html, /Recommended next actions/i);
   assert.match(html, /href="\/workspace\/feedback"/i);
+  assert.doesNotMatch(html, /Switch stakeholder role/i);
+  assert.doesNotMatch(html, /Open approval queue/i);
   assert.doesNotMatch(html, /Connected course of action/i);
   assert.doesNotMatch(html, /demo|prototype|demonstration|fictional/i);
+});
+
+test("renders administrator navigation only for an administrator account", async () => {
+  const response = await render("/workspace", true, { DB: actorDb("ADMIN", "Zulkarnine Khan") });
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /B-SCAN administrator/i);
+  assert.match(html, /href="\/workspace\/admin\/users"/i);
+  assert.match(html, /Open approval queue/i);
+  assert.doesNotMatch(html, /Switch stakeholder role/i);
+  assert.doesNotMatch(html, /Complete my profile/i);
+});
+
+test("binds staff workspaces to their assigned account roles", async () => {
+  for (const [role, label] of [["REFERRAL_OFFICER", "Referral officer"], ["ORG_REP", "Organization representative"]]) {
+    const response = await render("/workspace", true, { DB: actorDb(role, "Assigned Staff") });
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, new RegExp(label, "i"));
+    assert.doesNotMatch(html, /Switch stakeholder role/i);
+    assert.doesNotMatch(html, /Complete my profile/i);
+  }
 });
 
 test("renders the discovery catalogue", async () => {
