@@ -14,6 +14,7 @@ The current release includes:
 - job and learning applications with selection-stage tracking;
 - an in-app notification centre for referral and application updates;
 - administrator dashboards with live operational analytics, user access controls and organization management;
+- server-bound stakeholder workspaces that render only the authenticated account role;
 - member feedback reporting with an administrator assignment and resolution queue;
 - centralized browser security headers, same-origin mutation checks and distributed request limits;
 - an administrator security and audit view with protected activity records;
