@@ -183,3 +183,15 @@ export const feedbackReports = sqliteTable("feedback_reports", {
 export const activityLogs = sqliteTable("activity_logs", {
   id: text("id").primaryKey(), actorId: text("actor_id").references(() => users.id), action: text("action").notNull(), entityType: text("entity_type").notNull(), entityId: text("entity_id"), summary: text("summary").notNull(), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("activity_logs_recent_idx").on(table.createdAt), index("activity_logs_entity_idx").on(table.entityType, table.entityId)]);
+
+export const requestRateLimits = sqliteTable("request_rate_limits", {
+  id: text("id").primaryKey(),
+  subjectHash: text("subject_hash").notNull(),
+  routeScope: text("route_scope").notNull(),
+  windowStartedAt: integer("window_started_at").notNull(),
+  requestCount: integer("request_count").notNull().default(1),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("request_rate_limits_window_idx").on(table.windowStartedAt),
+  index("request_rate_limits_scope_idx").on(table.routeScope, table.windowStartedAt),
+]);
