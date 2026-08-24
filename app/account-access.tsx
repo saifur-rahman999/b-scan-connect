@@ -1,0 +1,2 @@
+"use client";import {useRouter} from "next/navigation";import {useState} from "react";
+export function AccountAccess(){const router=useRouter(),[busy,setBusy]=useState(false);const logout=async()=>{setBusy(true);await fetch("/api/auth/logout",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});router.push("/login");router.refresh();};return <button className="account-button" type="button" onClick={logout} disabled={busy}>{busy?"Signing out…":"Sign out"}</button>}

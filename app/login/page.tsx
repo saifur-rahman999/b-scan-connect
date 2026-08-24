@@ -1,0 +1,3 @@
+import type {Metadata} from "next";import Link from "next/link";import {AuthForm} from "../auth-form";
+export const metadata:Metadata={title:"Sign in",description:"Sign in to B-SCAN Connect."};
+export default function LoginPage(){return <main id="main-content" className="auth-page"><section className="auth-card"><Link className="brand" href="/"><span className="brand-mark">B</span><span><strong>B-SCAN</strong><small>Connect</small></span></Link><p className="workspace-kicker">Account access</p><h1>Sign in</h1><p>Use the email and password assigned to your account.</p><AuthForm mode="login"/></section></main>}

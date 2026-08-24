@@ -9,7 +9,7 @@ const features = [
 
 const opportunities = [
   { type: "Support service", title: "Community Physiotherapy Programme", org: "Shobuj Pathways Foundation", mode: "In person", location: "Dhaka", match: "Strong match" },
-  { type: "Inclusive job", title: "Junior Customer Support Associate", org: "BrightDesk Bangladesh", mode: "Hybrid", location: "Dhaka", match: "89% match" },
+  { type: "Inclusive job", title: "Junior Customer Support Associate", org: "BrightDesk Bangladesh", mode: "Hybrid", location: "Dhaka", match: "Profile-based match" },
   { type: "Training", title: "Accessible Digital Skills Bootcamp", org: "Uddipan Learning Collective", mode: "Online", location: "Nationwide", match: "Good match" },
 ];
 
@@ -36,8 +36,8 @@ export default function Home() {
           </nav>
           <div className="header-actions">
             <AccessibilityTools />
-            <Link className="text-link" href="/workspace">Sign in</Link>
-            <Link className="button button-small" href="/workspace">Open workspace</Link>
+            <Link className="text-link" href="/login">Sign in</Link>
+            <Link className="button button-small" href="/register">Register</Link>
           </div>
         </div>
       </header>
@@ -50,7 +50,7 @@ export default function Home() {
               <h1>Find the support and opportunities that fit <em>your goals.</em></h1>
               <p className="hero-lead">B-SCAN Connect brings accessible services, inclusive jobs, education and referrals into one clear journey—designed around informed choice.</p>
               <div className="hero-actions">
-                <Link className="button" href="/workspace">View personalized matches <span aria-hidden="true">→</span></Link>
+                <Link className="button" href="/register">Create your account <span aria-hidden="true">→</span></Link>
                 <Link className="button button-secondary" href="/discover">Browse opportunities</Link>
               </div>
               <div className="trust-row" aria-label="Platform principles">
@@ -66,15 +66,15 @@ export default function Home() {
                 <div className="profile-row">
                   <div className="avatar" aria-hidden="true">NS</div>
                   <div><small>Welcome back</small><strong>Nadia Sultana</strong></div>
-                  <div className="profile-score"><b>78%</b><small>Profile ready</small></div>
+                  <div className="profile-score"><b>In progress</b><small>Profile status</small></div>
                 </div>
                 <div className="mini-stat-grid">
-                  <div><span className="stat-icon">✦</span><b>12</b><small>New matches</small></div>
-                  <div><span className="stat-icon">↗</span><b>3</b><small>Active referrals</small></div>
-                  <div><span className="stat-icon">▣</span><b>4</b><small>Applications</small></div>
+                  <div><span className="stat-icon">✦</span><b>Matched</b><small>Relevant listings</small></div>
+                  <div><span className="stat-icon">↗</span><b>Tracked</b><small>Referral progress</small></div>
+                  <div><span className="stat-icon">▣</span><b>Updated</b><small>Applications</small></div>
                 </div>
                 <div className="match-card">
-                  <div className="match-head"><span className="match-label">Top match</span><b>92%</b></div>
+                  <div className="match-head"><span className="match-label">Strong match</span><b>Explained</b></div>
                   <h3>Accessible Digital Skills Bootcamp</h3>
                   <p>Online · Uddipan Learning Collective</p>
                   <div className="reason-tags"><span>Matches your skills</span><span>Online delivery</span></div>
@@ -82,17 +82,17 @@ export default function Home() {
                 </div>
               </div>
               <div className="floating-note note-one"><span>✓</span><div><b>Referral accepted</b><small>Appointment proposed</small></div></div>
-              <div className="floating-note note-two"><span>★</span><div><b>New job match</b><small>89% profile match</small></div></div>
+              <div className="floating-note note-two"><span>★</span><div><b>New job match</b><small>Reasons available</small></div></div>
             </div>
           </div>
         </section>
 
         <section className="impact-strip" aria-label="Platform overview">
           <div className="shell impact-grid">
-            <div><strong>12</strong><span>Partner organizations</span></div>
-            <div><strong>24</strong><span>Support services</span></div>
-            <div><strong>15</strong><span>Inclusive jobs</span></div>
-            <div><strong>10</strong><span>Learning opportunities</span></div>
+            <div><strong>✓</strong><span>Reviewed organizations</span></div>
+            <div><strong>✓</strong><span>Accessible support</span></div>
+            <div><strong>✓</strong><span>Inclusive jobs</span></div>
+            <div><strong>✓</strong><span>Learning opportunities</span></div>
           </div>
         </section>
 
@@ -143,7 +143,7 @@ export default function Home() {
               <p className="eyebrow light"><span /> Built for coordination</p>
               <h2>One platform, shared progress</h2>
               <p>Every stakeholder sees the right actions, history and next steps—without exposing unrelated private information.</p>
-              <Link className="button button-light" href="/workspace">Explore stakeholder dashboards →</Link>
+              <Link className="button button-light" href="/login">Sign in to your workspace →</Link>
             </div>
             <div className="role-list">
               {[
@@ -160,8 +160,8 @@ export default function Home() {
 
         <section className="section final-cta">
           <div className="shell cta-card">
-            <div><p className="eyebrow"><span /> Ready to explore?</p><h2>See the complete stakeholder journey.</h2><p>Switch between stakeholder roles and follow referrals, applications and approvals.</p></div>
-            <Link className="button" href="/workspace">Open stakeholder workspace →</Link>
+            <div><p className="eyebrow"><span /> Ready to explore?</p><h2>Start your connected journey.</h2><p>Create a member account to save listings, request referrals and follow applications.</p></div>
+            <Link className="button" href="/register">Create an account →</Link>
           </div>
         </section>
       </main>

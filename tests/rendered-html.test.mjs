@@ -25,8 +25,14 @@ function actorDb(role, displayName) {
       return {
         bind() {
           return {
-            first: async () => sql.includes("FROM users") ? { id: `${role.toLowerCase()}-1`, email: "owner@example.com", display_name: displayName, role } : null,
+            first: async () => {
+              if (sql.includes("FROM users") && !sql.includes("user_sessions")) return { id: `${role.toLowerCase()}-1`, email: "owner@example.com", display_name: displayName, role };
+              if (sql.includes("FROM pwd_profiles")) return { preferred_locations:"[]",support_needs:"[]",service_interests:"[]",education_summary:null,skills:"[]",employment_preferences:"[]",work_arrangement:null,opportunity_interests:"[]",accessibility_preferences:"[]",recommendation_consent:0,completion_percent:0,profile_version:1 };
+              if (sql.includes("COUNT(*)")) return { total: 0 };
+              return null;
+            },
             run: async () => ({ success: true, meta: { changes: 0 } }),
+            all: async () => ({ results: [] }),
           };
         },
       };
@@ -55,10 +61,11 @@ test("binds the member workspace to the authenticated account role", async () =>
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Stakeholder Workspace \| B-SCAN Connect/i);
-  assert.match(html, /Signed in as/i);
-  assert.match(html, /PwD user/i);
-  assert.match(html, /Welcome, Nadia/i);
-  assert.match(html, /Recommended next actions/i);
+  assert.match(html, /Member workspace/i);
+  assert.match(html, /Nadia Sultana/i);
+  assert.match(html, /Current matches/i);
+  assert.match(html, /Active referrals/i);
+  assert.match(html, /Active applications/i);
   assert.match(html, /href="\/workspace\/feedback"/i);
   assert.doesNotMatch(html, /Switch stakeholder role/i);
   assert.doesNotMatch(html, /Open approval queue/i);
@@ -68,24 +75,21 @@ test("binds the member workspace to the authenticated account role", async () =>
 
 test("renders administrator navigation only for an administrator account", async () => {
   const response = await render("/workspace", true, { DB: actorDb("ADMIN", "Zulkarnine Khan") });
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.match(html, /B-SCAN administrator/i);
-  assert.match(html, /href="\/workspace\/admin\/users"/i);
-  assert.match(html, /Open approval queue/i);
-  assert.doesNotMatch(html, /Switch stakeholder role/i);
-  assert.doesNotMatch(html, /Complete my profile/i);
+  assert.equal(response.status, 307);
+  assert.equal(new URL(response.headers.get("location")).pathname, "/workspace/admin");
 });
 
-test("binds staff workspaces to their assigned account roles", async () => {
-  for (const [role, label] of [["REFERRAL_OFFICER", "Referral officer"], ["ORG_REP", "Organization representative"]]) {
+test("routes staff accounts to their assigned operational queues", async () => {
+  for (const [role, target] of [["REFERRAL_OFFICER", "/workspace/referrals/queue"], ["ORG_REP", "/workspace/applications/queue"]]) {
     const response = await render("/workspace", true, { DB: actorDb(role, "Assigned Staff") });
-    assert.equal(response.status, 200);
-    const html = await response.text();
-    assert.match(html, new RegExp(label, "i"));
-    assert.doesNotMatch(html, /Switch stakeholder role/i);
-    assert.doesNotMatch(html, /Complete my profile/i);
+    assert.equal(response.status, 307);
+    assert.equal(new URL(response.headers.get("location")).pathname, target);
   }
+});
+
+test("renders password sign-in and member registration", async () => {
+  const login=await render("/login");assert.equal(login.status,200);assert.match(await login.text(),/Email address[\s\S]*Password[\s\S]*Sign in/i);
+  const register=await render("/register");assert.equal(register.status,200);const html=await register.text();assert.match(html,/Create your account/i);assert.match(html,/Full name/i);assert.match(html,/member account/i);
 });
 
 test("renders the discovery catalogue", async () => {

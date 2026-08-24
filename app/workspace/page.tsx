@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { requireChatGPTUser } from "../chatgpt-auth";
 import { requireCatalogActor } from "../../db/catalog-repository";
-import { StakeholderWorkspace } from "./role-workspace";
+import { redirect } from "next/navigation";
+import {getMemberDashboard} from "../../db/member-experience";
+import {MemberDashboard} from "./member-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +17,8 @@ export const metadata: Metadata = {
 export default async function WorkspacePage() {
   await requireChatGPTUser("/workspace");
   const actor = await requireCatalogActor();
-  return <StakeholderWorkspace accountName={actor.displayName} accountRole={actor.role} />;
+  if(actor.role==="ADMIN")redirect("/workspace/admin");
+  if(actor.role==="REFERRAL_OFFICER")redirect("/workspace/referrals/queue");
+  if(actor.role==="ORG_REP")redirect("/workspace/applications/queue");
+  return <MemberDashboard actor={actor} data={await getMemberDashboard(actor)}/>;
 }

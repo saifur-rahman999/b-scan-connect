@@ -4,6 +4,7 @@ import { requireChatGPTUser } from "../../../chatgpt-auth";
 import { requireCatalogActor } from "../../../../db/catalog-repository";
 import { getApplicationTimeline } from "../../../../db/application-repository";
 import { MemberNav } from "../../member-nav";
+import { OperationsNav } from "../../operations-nav";
 import { ApplicationActions } from "./application-actions";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +17,10 @@ async function Content({ params, searchParams }: { params: Promise<{ reference: 
   const query = await searchParams;
   const queueAccess = query.queue === "1";
   await requireChatGPTUser(`/workspace/applications/${encodeURIComponent(reference)}${queueAccess ? "?queue=1" : ""}`);
-  const { application, events } = await getApplicationTimeline(await requireCatalogActor(), reference, queueAccess);
+  const actor = await requireCatalogActor();
+  const { application, events } = await getApplicationTimeline(actor, reference, queueAccess);
   return <>
-    <MemberNav active="applications" />
+    {queueAccess ? <OperationsNav active="applications" role={actor.role as "ADMIN"|"REFERRAL_OFFICER"|"ORG_REP"} /> : <MemberNav active="applications" />}
     <main id="main-content" className="shell member-main">
       {query.created === "1" && <div className="success-notice" role="status"><span>✓</span><div><b>Application saved</b><p>Your reference is {application.reference}. Review the preparation information and submit when ready.</p></div></div>}
       <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href={queueAccess ? "/workspace/applications/queue" : "/workspace/applications"}>{queueAccess ? "Application queue" : "My applications"}</Link><span>/</span><span>{application.reference}</span></nav>
