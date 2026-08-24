@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-async function render(pathname = "/", authenticated = false) {
+async function dispatch(pathname = "/", init = {}, bindings = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${pathname}`);
   const { default: worker } = await import(workerUrl.href);
+  return worker.fetch(new Request(`http://localhost${pathname}`, init), {
+    ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    ...bindings,
+  }, { waitUntil() {}, passThroughOnException() {} });
+}
+
+async function render(pathname = "/", authenticated = false) {
   const headers = { accept: "text/html" };
   if (authenticated) headers["oai-authenticated-user-email"] = "owner@example.com";
-  return worker.fetch(new Request(`http://localhost${pathname}`, { headers }), {
-    ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
-  }, { waitUntil() {}, passThroughOnException() {} });
+  return dispatch(pathname, { headers });
 }
 
 test("renders the product landing page", async () => {
@@ -21,6 +26,11 @@ test("renders the product landing page", async () => {
   assert.doesNotMatch(html, /All people, organizations and opportunities shown/i);
   assert.doesNotMatch(html, /demo|prototype|demonstration|fictional/i);
   assert.doesNotMatch(html, /Starter Project/i);
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/i);
+  assert.match(response.headers.get("permissions-policy") ?? "", /camera=\(\)/i);
+  assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/i);
 });
 
 test("renders the stakeholder workspace route", async () => {
@@ -59,4 +69,42 @@ test("starts the application journey from an opportunity", async () => {
   assert.match(html, /Junior Customer Support Associate/i);
   assert.match(html, /Start application/i);
   assert.match(html, /\/workspace\/applications\/new\?listing=junior-customer-support-associate/i);
+});
+
+test("publishes privacy and terms information", async () => {
+  const privacy = await render("/privacy");
+  assert.equal(privacy.status, 200);
+  assert.match(await privacy.text(), /Your information and choices/i);
+  const terms = await render("/terms");
+  assert.equal(terms.status, 200);
+  assert.match(await terms.text(), /Using B-SCAN Connect/i);
+});
+
+test("blocks unsafe cross-site mutations before application code", async () => {
+  const response = await dispatch("/api/profile", {
+    method: "PUT",
+    headers: { "content-type": "application/json", origin: "https://malicious.invalid", "sec-fetch-site": "cross-site" },
+    body: "{}",
+  });
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /cross-site/i);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+
+test("rejects oversized and incorrectly formatted mutations", async () => {
+  const oversized = await dispatch("/api/profile", { method: "PUT", headers: { "content-type": "application/json", "content-length": "70000" }, body: "{}" });
+  assert.equal(oversized.status, 413);
+  const wrongType = await dispatch("/api/profile", { method: "PUT", headers: { "content-type": "text/plain" }, body: "{}" });
+  assert.equal(wrongType.status, 415);
+});
+
+test("limits repeated mutations with a distributed counter", async () => {
+  const DB = { prepare() { return { bind() { return { first: async () => ({ request_count: 31 }), run: async () => ({ success: true }) }; } }; } };
+  const response = await dispatch("/api/profile", {
+    method: "PUT",
+    headers: { "content-type": "application/json", "oai-authenticated-user-email": "owner@example.com" },
+    body: "{}",
+  }, { DB });
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("retry-after"), "60");
 });
