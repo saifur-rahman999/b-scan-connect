@@ -92,6 +92,56 @@ test("renders password sign-in and member registration", async () => {
   const register=await render("/register");assert.equal(register.status,200);const html=await register.text();assert.match(html,/Create your account/i);assert.match(html,/Full name/i);assert.match(html,/member account/i);
 });
 
+test("registers a member within the hosted PBKDF2 limit", async () => {
+  const users = [];
+  const sessions = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              if (sql.includes("INSERT INTO request_rate_limits")) return { request_count: 1 };
+              return null;
+            },
+            async run() {
+              if (sql.startsWith("INSERT INTO users")) users.push({ id: args[0], email: args[1], displayName: args[2], passwordHash: args[3], passwordSalt: args[4] });
+              if (sql.startsWith("INSERT INTO user_sessions")) sessions.push({ id: args[0], userId: args[1], tokenHash: args[2], expiresAt: args[3] });
+              return { success: true, meta: { changes: 1 } };
+            },
+            async all() { return { results: [] }; },
+          };
+        },
+      };
+    },
+    async batch(statements) {
+      for (const statement of statements) await statement.run();
+      return statements.map(() => ({ success: true }));
+    },
+  };
+  const originalDeriveBits = crypto.subtle.deriveBits.bind(crypto.subtle);
+  crypto.subtle.deriveBits = (algorithm, key, length) => {
+    assert.ok(algorithm.iterations <= 100_000, "PBKDF2 exceeds the hosted runtime limit");
+    return originalDeriveBits(algorithm, key, length);
+  };
+  try {
+    const response = await dispatch("/api/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ displayName: "New Member", email: "new.member@example.com", password: "accessible-passphrase" }),
+    }, { DB });
+    assert.equal(response.status, 201);
+    assert.equal(users.length, 1);
+    assert.equal(users[0].email, "new.member@example.com");
+    assert.ok(users[0].passwordHash);
+    assert.ok(users[0].passwordSalt);
+    assert.equal(sessions.length, 1);
+    assert.match(response.headers.get("set-cookie") ?? "", /bscan_session=/);
+  } finally {
+    crypto.subtle.deriveBits = originalDeriveBits;
+  }
+});
+
 test("renders the discovery catalogue", async () => {
   const response = await render("/discover");
   assert.equal(response.status, 200);
