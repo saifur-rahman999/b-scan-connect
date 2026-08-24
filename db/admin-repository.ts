@@ -1,5 +1,6 @@
 import { getRawDb } from ".";
 import { CatalogError, type Actor } from "./catalog-repository";
+import { createPasswordCredential, validatePassword } from "./auth-repository";
 
 export type AdminUser = {
   id: string; email: string; displayName: string; role: Actor["role"];
@@ -35,16 +36,19 @@ export async function listAdminUsers(actor: Actor): Promise<AdminUser[]> {
   return rows.results.map((row: { id:string; email:string; display_name:string; role:Actor["role"]; status:AdminUser["status"]; created_at:string; referrals:number; applications:number; organizations:number }) => ({ id:row.id,email:row.email,displayName:row.display_name,role:row.role,status:row.status,referrals:Number(row.referrals),applications:Number(row.applications),organizations:Number(row.organizations),createdAt:row.created_at }));
 }
 
-export async function createAdminUser(actor: Actor, input: { email?:unknown; displayName?:unknown; role?:unknown }) {
+export async function createAdminUser(actor: Actor, input: { email?:unknown; displayName?:unknown; role?:unknown; password?:unknown }) {
   requireAdmin(actor);
   const email = clean(input.email, 190).toLowerCase();
   const displayName = clean(input.displayName, 120);
   const role = clean(input.role) as Actor["role"];
   if (!/^\S+@\S+\.\S+$/.test(email) || displayName.length < 2 || !["PWD_USER","ADMIN","REFERRAL_OFFICER","ORG_REP"].includes(role)) throw new CatalogError("Enter a valid name, email and workspace role.", 400);
+  let password:string;
+  try { password=validatePassword(input.password); } catch { throw new CatalogError("Set a temporary password between 8 and 128 characters.",400); }
+  const credential=await createPasswordCredential(password);
   const id = crypto.randomUUID();
   try {
     await getRawDb().batch([
-      getRawDb().prepare("INSERT INTO users (id,email,display_name,role,status) VALUES (?,?,?,?,'ACTIVE')").bind(id,email,displayName,role),
+      getRawDb().prepare("INSERT INTO users (id,email,display_name,role,status,password_hash,password_salt) VALUES (?,?,?,?,'ACTIVE',?,?)").bind(id,email,displayName,role,credential.passwordHash,credential.passwordSalt),
       getRawDb().prepare("INSERT INTO activity_logs (id,actor_id,action,entity_type,entity_id,summary) VALUES (?,?,'USER_CREATED','USER',?,?)").bind(crypto.randomUUID(),actor.id,id,`${displayName} added as ${role}`),
     ]);
   } catch { throw new CatalogError("That email is already assigned to a workspace account.", 409); }
@@ -119,12 +123,12 @@ export async function setOrganizationRepresentative(actor:Actor,organizationId:s
 async function count(query:string) { const row=await getRawDb().prepare(query).first<{total:number}>(); return Number(row?.total??0); }
 export async function getAdminAnalytics(actor:Actor) {
   requireAdmin(actor);
-  const [users,organizations,listings,referrals,applications,feedback,saved]=await Promise.all([
-    count("SELECT COUNT(*) total FROM users WHERE status='ACTIVE'"),count("SELECT COUNT(*) total FROM organizations WHERE status='PUBLISHED'"),count("SELECT COUNT(*) total FROM catalog_listings WHERE status='PUBLISHED'"),count("SELECT COUNT(*) total FROM referrals WHERE status NOT IN ('COMPLETED','CANCELLED')"),count("SELECT COUNT(*) total FROM applications WHERE stage NOT IN ('REJECTED','WITHDRAWN')"),count("SELECT COUNT(*) total FROM feedback_reports WHERE status NOT IN ('RESOLVED','ARCHIVED')"),count("SELECT COUNT(*) total FROM saved_items")
+  const [accounts,users,approvals,organizations,listings,referrals,applications,feedback,saved]=await Promise.all([
+    count("SELECT COUNT(*) total FROM users"),count("SELECT COUNT(*) total FROM users WHERE status='ACTIVE'"),count("SELECT COUNT(*) total FROM catalog_listings WHERE status='SUBMITTED'"),count("SELECT COUNT(*) total FROM organizations WHERE status='PUBLISHED'"),count("SELECT COUNT(*) total FROM catalog_listings WHERE status='PUBLISHED'"),count("SELECT COUNT(*) total FROM referrals WHERE status NOT IN ('COMPLETED','CANCELLED')"),count("SELECT COUNT(*) total FROM applications WHERE stage NOT IN ('REJECTED','WITHDRAWN')"),count("SELECT COUNT(*) total FROM feedback_reports WHERE status NOT IN ('RESOLVED','ARCHIVED')"),count("SELECT COUNT(*) total FROM saved_items")
   ]);
   const activity=await getRawDb().prepare("SELECT action,entity_type,summary,created_at FROM activity_logs ORDER BY created_at DESC LIMIT 8").all<{action:string;entity_type:string;summary:string;created_at:string}>();
   const roles=await getRawDb().prepare("SELECT role label,COUNT(*) value FROM users WHERE status='ACTIVE' GROUP BY role ORDER BY value DESC").all<{label:string;value:number}>();
   const referralStages=await getRawDb().prepare("SELECT status label,COUNT(*) value FROM referrals GROUP BY status ORDER BY value DESC").all<{label:string;value:number}>();
   const applicationStages=await getRawDb().prepare("SELECT stage label,COUNT(*) value FROM applications GROUP BY stage ORDER BY value DESC").all<{label:string;value:number}>();
-  return {totals:{users,organizations,listings,referrals,applications,feedback,saved},roles:roles.results as {label:string;value:number}[],referralStages:referralStages.results as {label:string;value:number}[],applicationStages:applicationStages.results as {label:string;value:number}[],activity:activity.results as {action:string;entity_type:string;summary:string;created_at:string}[]};
+  return {totals:{accounts,users,approvals,organizations,listings,referrals,applications,feedback,saved},roles:roles.results as {label:string;value:number}[],referralStages:referralStages.results as {label:string;value:number}[],applicationStages:applicationStages.results as {label:string;value:number}[],activity:activity.results as {action:string;entity_type:string;summary:string;created_at:string}[]};
 }

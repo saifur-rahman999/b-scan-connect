@@ -12,8 +12,18 @@ export const users = sqliteTable("users", {
   displayName: text("display_name").notNull(),
   role: text("role", { enum: ["PWD_USER", "ADMIN", "REFERRAL_OFFICER", "ORG_REP"] }).notNull(),
   status: text("status", { enum: ["ACTIVE", "SUSPENDED", "DEACTIVATED", "ARCHIVED"] }).notNull().default("ACTIVE"),
+  passwordHash: text("password_hash"),
+  passwordSalt: text("password_salt"),
   ...timestamps,
 }, (table) => [uniqueIndex("users_email_idx").on(table.email), index("users_role_status_idx").on(table.role, table.status)]);
+
+export const userSessions = sqliteTable("user_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [uniqueIndex("user_sessions_token_idx").on(table.tokenHash), index("user_sessions_expiry_idx").on(table.expiresAt)]);
 
 export const locations = sqliteTable("locations", {
   id: text("id").primaryKey(),

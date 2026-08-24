@@ -19,7 +19,7 @@ export async function getSecurityOverview(actor: Actor) {
     d1.prepare(`SELECT l.id,l.action,l.entity_type,l.summary,l.created_at,
       COALESCE(u.display_name,'System') actor_name,COALESCE(u.email,'') actor_email
       FROM activity_logs l LEFT JOIN users u ON u.id=l.actor_id
-      WHERE l.action IN ('ADMIN_BOOTSTRAPPED','RATE_LIMITED','USER_CREATED','USER_UPDATED','ORGANIZATION_CREATED','ORGANIZATION_UPDATED','ORGANIZATION_REP_ASSIGN','ORGANIZATION_REP_REMOVE')
+      WHERE l.action IN ('ADMIN_BOOTSTRAPPED','ACCOUNT_REGISTERED','RATE_LIMITED','USER_CREATED','USER_UPDATED','ORGANIZATION_CREATED','ORGANIZATION_UPDATED','ORGANIZATION_REP_ASSIGN','ORGANIZATION_REP_REMOVE')
       ORDER BY l.created_at DESC LIMIT 60`).all<{
         id:string;action:string;entity_type:string;summary:string;created_at:string;actor_name:string;actor_email:string;
       }>(),

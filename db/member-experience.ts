@@ -189,3 +189,16 @@ export async function buildRecommendations(actor: Actor): Promise<{ profile: Mem
   await d1.batch([d1.prepare("DELETE FROM recommendation_results WHERE user_id = ?").bind(actor.id), ...writes]);
   return { profile, recommendations };
 }
+
+export async function getMemberDashboard(actor:Actor){
+  const {profile,recommendations}=await buildRecommendations(actor);
+  const count=async(sql:string)=>Number((await getRawDb().prepare(sql).bind(actor.id).first<{total:number}>())?.total??0);
+  const [referrals,applications,unread,saved]=await Promise.all([
+    count("SELECT COUNT(*) total FROM referrals WHERE user_id=? AND status NOT IN ('COMPLETED','CANCELLED')"),
+    count("SELECT COUNT(*) total FROM applications WHERE user_id=? AND stage NOT IN ('REJECTED','WITHDRAWN')"),
+    count("SELECT COUNT(*) total FROM notifications WHERE user_id=? AND read_at IS NULL AND archived_at IS NULL"),
+    count("SELECT COUNT(*) total FROM saved_items WHERE user_id=?"),
+  ]);
+  const updates=await getRawDb().prepare("SELECT id,title,body,related_type,related_id,created_at FROM notifications WHERE user_id=? AND archived_at IS NULL ORDER BY created_at DESC LIMIT 5").bind(actor.id).all<{id:string;title:string;body:string;related_type:string|null;related_id:string|null;created_at:string}>();
+  return {profile,recommendations:recommendations.slice(0,3),totals:{matches:recommendations.length,referrals,applications,unread,saved},updates:updates.results};
+}

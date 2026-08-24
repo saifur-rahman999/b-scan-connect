@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AccessibilityTools } from "../accessibility-tools";
+import {AccountAccess} from "../account-access";
 
 export function MemberNav({ active }: { active: "workspace" | "profile" | "recommendations" | "saved" | "referrals" | "applications" | "notifications" | "feedback" }) {
   return <header className="member-header"><div className="shell member-header-inner">
@@ -14,6 +15,6 @@ export function MemberNav({ active }: { active: "workspace" | "profile" | "recom
       <Link className={active === "notifications" ? "active" : ""} href="/workspace/notifications">Notifications</Link>
       <Link className={active === "feedback" ? "active" : ""} href="/workspace/feedback">Feedback</Link>
     </nav>
-    <div className="member-header-actions"><AccessibilityTools /><Link href="/discover">Discover</Link></div>
+    <div className="member-header-actions"><AccessibilityTools /><Link href="/discover">Discover</Link><AccountAccess/></div>
   </div></header>;
 }

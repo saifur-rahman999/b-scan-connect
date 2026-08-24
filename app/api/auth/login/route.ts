@@ -1,0 +1,2 @@
+import { AuthError, loginWithPassword, sessionCookie } from "../../../../db/auth-repository";
+export async function POST(request:Request){try{const result=await loginWithPassword(await request.json());return Response.json({user:result.user},{headers:{"Set-Cookie":sessionCookie(result.token,result.expiresAt)}});}catch(error){const status=error instanceof AuthError?error.status:500;return Response.json({error:error instanceof AuthError?error.message:"Sign in could not be completed."},{status});}}

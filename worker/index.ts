@@ -27,6 +27,7 @@ function jsonError(status: number, error: string, requestId: string, extraHeader
 }
 
 function routeScope(pathname: string) {
+  if (pathname.startsWith("/api/auth/")) return "/api/auth";
   if (pathname.startsWith("/api/admin/")) return "/api/admin";
   if (pathname.includes("/messages")) return "/api/messages";
   if (pathname.startsWith("/api/feedback")) return "/api/feedback";
@@ -34,6 +35,7 @@ function routeScope(pathname: string) {
 }
 
 function scopeLimit(scope: string) {
+  if (scope === "/api/auth") return 8;
   if (scope === "/api/messages" || scope === "/api/feedback") return 10;
   if (scope === "/api/admin") return 20;
   return 30;

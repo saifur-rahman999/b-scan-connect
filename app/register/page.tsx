@@ -1,0 +1,3 @@
+import type {Metadata} from "next";import Link from "next/link";import {AuthForm} from "../auth-form";
+export const metadata:Metadata={title:"Register",description:"Create a B-SCAN Connect member account."};
+export default function RegisterPage(){return <main id="main-content" className="auth-page"><section className="auth-card"><Link className="brand" href="/"><span className="brand-mark">B</span><span><strong>B-SCAN</strong><small>Connect</small></span></Link><p className="workspace-kicker">Member registration</p><h1>Create your account</h1><p>Register with your information, then complete your profile and explore services, jobs and learning opportunities.</p><AuthForm mode="register"/></section></main>}

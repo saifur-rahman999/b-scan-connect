@@ -1,0 +1,2 @@
+import { AuthError, registerMember, sessionCookie } from "../../../../db/auth-repository";
+export async function POST(request:Request){try{const result=await registerMember(await request.json());return Response.json({user:result.user},{status:201,headers:{"Set-Cookie":sessionCookie(result.token,result.expiresAt)}});}catch(error){const status=error instanceof AuthError?error.status:500;return Response.json({error:error instanceof AuthError?error.message:"Account could not be created."},{status});}}
