@@ -167,7 +167,7 @@ export default function Home() {
       </main>
 
       <footer>
-        <div className="shell footer-inner"><Brand /><p>Accessible support and opportunity coordination</p><div><a href="#main-content">Back to top ↑</a></div></div>
+        <div className="shell footer-inner"><Brand /><p>Accessible support and opportunity coordination</p><div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="#main-content">Back to top ↑</a></div></div>
       </footer>
     </>
   );
