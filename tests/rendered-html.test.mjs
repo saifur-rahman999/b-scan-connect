@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function dispatch(pathname = "/", init = {}, bindings = {}) {
@@ -90,6 +91,14 @@ test("routes staff accounts to their assigned operational queues", async () => {
 test("renders password sign-in and member registration", async () => {
   const login=await render("/login");assert.equal(login.status,200);assert.match(await login.text(),/Email address[\s\S]*Password[\s\S]*Sign in/i);
   const register=await render("/register");assert.equal(register.status,200);const html=await register.text();assert.match(html,/Create your account/i);assert.match(html,/Full name/i);assert.match(html,/member account/i);
+});
+
+test("auth forms complete with one recoverable navigation", async () => {
+  const source = await readFile(new URL("../app/auth-form.tsx", import.meta.url), "utf8");
+  assert.match(source, /new AbortController\(\)/);
+  assert.match(source, /window\.location\.assign\(target\)/);
+  assert.doesNotMatch(source, /router\.refresh\(\)/);
+  assert.match(source, /finally[\s\S]*setBusy\(false\)/);
 });
 
 test("registers a member within the hosted PBKDF2 limit", async () => {
