@@ -160,6 +160,24 @@ test("renders the discovery catalogue", async () => {
   assert.match(html, /Reviewed listings/i);
 });
 
+test("keeps a balanced catalogue across jobs, services and opportunities", async () => {
+  const source = await readFile(new URL("../data/catalog.ts", import.meta.url), "utf8");
+  const jobs = source.match(/kind: "job"/g) ?? [];
+  const services = source.match(/kind: "service"/g) ?? [];
+  const training = source.match(/kind: "(?:training|education)"/g) ?? [];
+  assert.ok(jobs.length >= 7);
+  assert.ok(services.length >= 7);
+  assert.ok(training.length >= 6);
+});
+
+test("renders a newly expanded catalogue listing", async () => {
+  const response = await render("/discover/remote-data-operations-assistant");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Remote Data Operations Assistant/i);
+  assert.match(html, /Screen-reader compatible systems/i);
+});
+
 test("renders a listing detail page", async () => {
   const response = await render("/discover/accessible-digital-skills-bootcamp");
   assert.equal(response.status, 200);
