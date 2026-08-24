@@ -15,6 +15,9 @@ The current release includes:
 - an in-app notification centre for referral and application updates;
 - administrator dashboards with live operational analytics, user access controls and organization management;
 - member feedback reporting with an administrator assignment and resolution queue;
+- centralized browser security headers, same-origin mutation checks and distributed request limits;
+- an administrator security and audit view with protected activity records;
+- public privacy and terms information plus a database health endpoint;
 - automated lint, production-build and route checks in GitHub Actions.
 
 ## Application surfaces
@@ -31,6 +34,9 @@ The current release includes:
 - `/workspace/admin/users` — account access and role management
 - `/workspace/admin/organizations` — organization and representative management
 - `/workspace/admin/feedback` — feedback assignment and resolution queue
+- `/workspace/admin/security` — security status and administrative audit trail
+- `/privacy` and `/terms` — public service information
+- `/api/health` — database-aware service health response
 
 ## Stack
 

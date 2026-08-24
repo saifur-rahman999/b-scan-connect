@@ -120,12 +120,23 @@ export async function requireCatalogActor(): Promise<Actor> {
     .bind(identity.email.toLowerCase()).first<{ id: string; email: string; display_name: string; role: ActorRole }>();
 
   if (!actor) {
-    const count = await d1.prepare("SELECT COUNT(*) AS total FROM users").first<{ total: number }>();
-    if (Number(count?.total ?? 0) !== 0) throw new CatalogError("Your account has not been assigned a workspace role.", 403);
     const id = crypto.randomUUID();
-    await d1.prepare(`INSERT INTO users (id, email, display_name, role, status)
-      VALUES (?, ?, ?, 'ADMIN', 'ACTIVE')`).bind(id, identity.email.toLowerCase(), identity.displayName).run();
-    actor = { id, email: identity.email.toLowerCase(), display_name: identity.displayName, role: "ADMIN" };
+    const results = await d1.batch([
+      d1.prepare(`INSERT INTO users (id, email, display_name, role, status)
+        SELECT ?, ?, ?, 'ADMIN', 'ACTIVE'
+        WHERE NOT EXISTS (SELECT 1 FROM users)`)
+        .bind(id, identity.email.toLowerCase(), identity.displayName),
+      d1.prepare(`INSERT INTO activity_logs (id, actor_id, action, entity_type, entity_id, summary)
+        SELECT ?, ?, 'ADMIN_BOOTSTRAPPED', 'USER', ?, 'Initial administrator access established'
+        WHERE changes() = 1`).bind(crypto.randomUUID(), id, id),
+    ]);
+    if (Number(results[0].meta.changes ?? 0) === 1) {
+      actor = { id, email: identity.email.toLowerCase(), display_name: identity.displayName, role: "ADMIN" };
+    } else {
+      actor = await d1.prepare("SELECT id, email, display_name, role FROM users WHERE email = ? AND status = 'ACTIVE' LIMIT 1")
+        .bind(identity.email.toLowerCase()).first<{ id: string; email: string; display_name: string; role: ActorRole }>();
+    }
+    if (!actor) throw new CatalogError("Your account has not been assigned a workspace role.", 403);
   }
 
   return { id: actor.id, email: actor.email, displayName: actor.display_name, role: actor.role };
@@ -232,7 +243,9 @@ export class CatalogError extends Error {
 }
 
 export function catalogErrorResponse(error: unknown) {
-  if (error instanceof CatalogError) return Response.json({ error: error.message }, { status: error.status });
-  const message = error instanceof Error ? error.message : "Unexpected error";
-  return Response.json({ error: message }, { status: 500 });
+  const requestId = crypto.randomUUID();
+  const headers = { "Cache-Control": "no-store", "X-Request-ID": requestId };
+  if (error instanceof CatalogError) return Response.json({ error: error.message, requestId }, { status: error.status, headers });
+  console.error("Unhandled request error", { requestId, error });
+  return Response.json({ error: "We could not complete this request. Try again or contact support with the request ID.", requestId }, { status: 500, headers });
 }

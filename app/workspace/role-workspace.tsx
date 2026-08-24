@@ -52,7 +52,7 @@ const roleData: Record<Role, {
   },
   admin: {
     label: "B-SCAN administrator", person: "Samira Hossain", initials: "SH",
-    nav: ["Dashboard", "Users", "Organizations", "Services", "Jobs", "Opportunities", "Approval queue", "Referrals", "Applications", "Feedback", "Analytics"],
+    nav: ["Dashboard", "Users", "Organizations", "Services", "Jobs", "Opportunities", "Approval queue", "Referrals", "Applications", "Feedback", "Analytics", "Security"],
     greeting: "System overview", subtitle: "Monitor participation, workflows and catalogue quality.",
     stats: [
       { label: "Active users", value: "248", detail: "+18 this month", tone: "lime" },
@@ -114,7 +114,7 @@ function Sidebar({ role }: { role: Role }) {
   const workspaceLinks: Partial<Record<Role, Record<string, string>>> = {
     user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals", "My applications": "/workspace/applications", Notifications: "/workspace/notifications", Feedback: "/workspace/feedback" },
     officer: { "New referrals": "/workspace/referrals/queue", "Assigned referrals": "/workspace/referrals/queue" },
-    representative: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Notifications: "/workspace/notifications" }, admin: { Dashboard: "/workspace/admin", Users: "/workspace/admin/users", Organizations: "/workspace/admin/organizations", Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Feedback: "/workspace/admin/feedback", Analytics: "/workspace/admin" },
+    representative: { Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Notifications: "/workspace/notifications" }, admin: { Dashboard: "/workspace/admin", Users: "/workspace/admin/users", Organizations: "/workspace/admin/organizations", Referrals: "/workspace/referrals/queue", Applications: "/workspace/applications/queue", Feedback: "/workspace/admin/feedback", Analytics: "/workspace/admin", Security: "/workspace/admin/security" },
   };
   return (
     <aside className="workspace-sidebar">
