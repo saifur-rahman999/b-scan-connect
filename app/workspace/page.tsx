@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireChatGPTUser } from "../chatgpt-auth";
+import { requireCatalogActor } from "../../db/catalog-repository";
 import { StakeholderWorkspace } from "./role-workspace";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WorkspacePage() {
-  const user = await requireChatGPTUser("/workspace");
-  return <StakeholderWorkspace accountName={user.fullName ?? user.email} />;
+  await requireChatGPTUser("/workspace");
+  const actor = await requireCatalogActor();
+  return <StakeholderWorkspace accountName={actor.displayName} accountRole={actor.role} />;
 }
