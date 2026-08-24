@@ -49,7 +49,12 @@ export async function registerMember(input: { displayName?: unknown; email?: unk
       getRawDb().prepare("INSERT INTO pwd_profiles (id,user_id) VALUES (?,?)").bind(crypto.randomUUID(),id),
       getRawDb().prepare("INSERT INTO activity_logs (id,actor_id,action,entity_type,entity_id,summary) VALUES (?,?,'ACCOUNT_REGISTERED','USER',?,'Member account registered')").bind(crypto.randomUUID(),id,id),
     ]);
-  } catch { throw new AuthError("An account already uses that email address.", 409); }
+  } catch (error) {
+    if (error instanceof Error && /unique constraint failed:\s*users\.email/i.test(error.message)) {
+      throw new AuthError("An account already uses that email address.", 409);
+    }
+    throw error;
+  }
   return { ...(await createSession(id)), user: { id, email, displayName, role: "PWD_USER" as const } };
 }
 

@@ -1,4 +1,7 @@
-const ITERATIONS = 210_000;
+// Cloudflare Workers accepts PBKDF2 derivations up to 100,000 iterations.
+// Keep this value within the hosted runtime limit so registration and sign-in
+// use the same portable credential format in production and local tests.
+export const PBKDF2_ITERATIONS = 100_000;
 const encoder = new TextEncoder();
 
 function toBase64(bytes: Uint8Array) {
@@ -28,6 +31,6 @@ export async function verifyPassword(password: string, expectedHash: string, sal
 async function derive(password: string, salt: Uint8Array) {
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const saltBuffer = salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer;
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: saltBuffer, iterations: ITERATIONS }, key, 256);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: saltBuffer, iterations: PBKDF2_ITERATIONS }, key, 256);
   return toBase64(new Uint8Array(bits));
 }
