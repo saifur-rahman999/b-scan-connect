@@ -6,19 +6,25 @@ import { AccessibilityTools } from "../accessibility-tools";
 import type { CatalogItem } from "../../data/catalog";
 
 type Role = "user" | "officer" | "representative" | "admin";
+type AccountRole = "PWD_USER" | "REFERRAL_OFFICER" | "ORG_REP" | "ADMIN";
 type WorkspaceView = "dashboard" | "content";
+
+const workspaceRole: Record<AccountRole, Role> = {
+  PWD_USER: "user",
+  REFERRAL_OFFICER: "officer",
+  ORG_REP: "representative",
+  ADMIN: "admin",
+};
 
 const roleData: Record<Role, {
   label: string;
-  person: string;
-  initials: string;
   nav: string[];
   greeting: string;
   subtitle: string;
   stats: { label: string; value: string; detail: string; tone?: string }[];
 }> = {
   user: {
-    label: "PwD user", person: "Nadia Sultana", initials: "NS",
+    label: "PwD user",
     nav: ["Dashboard", "My profile", "Recommendations", "Saved items", "My referrals", "My applications", "Notifications", "Feedback"],
     greeting: "Good morning, Nadia", subtitle: "Here is what needs your attention today.",
     stats: [
@@ -29,7 +35,7 @@ const roleData: Record<Role, {
     ],
   },
   officer: {
-    label: "Referral officer", person: "Farhana Rahman", initials: "FR",
+    label: "Referral officer",
     nav: ["Dashboard", "New referrals", "Assigned referrals", "Waiting for information", "Referred cases", "Appointments", "Completed cases"],
     greeting: "Referral work queue", subtitle: "Review new cases and keep every referral moving.",
     stats: [
@@ -40,7 +46,7 @@ const roleData: Record<Role, {
     ],
   },
   representative: {
-    label: "Organization representative", person: "Tanvir Ahmed", initials: "TA",
+    label: "Organization representative",
     nav: ["Dashboard", "Organization profile", "Services", "Jobs", "Programmes", "Referrals", "Applications", "Notifications"],
     greeting: "Shobuj Pathways Foundation", subtitle: "Manage services, referrals and applicant responses.",
     stats: [
@@ -51,7 +57,7 @@ const roleData: Record<Role, {
     ],
   },
   admin: {
-    label: "B-SCAN administrator", person: "Samira Hossain", initials: "SH",
+    label: "B-SCAN administrator",
     nav: ["Dashboard", "Users", "Organizations", "Services", "Jobs", "Opportunities", "Approval queue", "Referrals", "Applications", "Feedback", "Analytics", "Security"],
     greeting: "System overview", subtitle: "Monitor participation, workflows and catalogue quality.",
     stats: [
@@ -109,7 +115,7 @@ const nextActionsByRole: Record<Role, { title: string; detail: string; action: s
   ],
 };
 
-function Sidebar({ role }: { role: Role }) {
+function Sidebar({ role, accountName, accountInitials }: { role: Role; accountName: string; accountInitials: string }) {
   const data = roleData[role];
   const workspaceLinks: Partial<Record<Role, Record<string, string>>> = {
     user: { "My profile": "/workspace/profile", Recommendations: "/workspace/recommendations", "Saved items": "/workspace/saved", "My referrals": "/workspace/referrals", "My applications": "/workspace/applications", Notifications: "/workspace/notifications", Feedback: "/workspace/feedback" },
@@ -123,7 +129,7 @@ function Sidebar({ role }: { role: Role }) {
         {data.nav.map((item, index) => workspaceLinks[role]?.[item] ? <Link href={workspaceLinks[role]?.[item] ?? "/workspace"} key={item}><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}</Link> : <button className={index === 0 ? "active" : ""} key={item} type="button"><i aria-hidden="true">{["⌂","○","✦","♡","↗","▤","◇","!","◎","▦","≋"][index] ?? "·"}</i>{item}{item === "Notifications" && <em>4</em>}</button>)}
       </nav>
       <div className="sidebar-help"><span aria-hidden="true">?</span><b>Need assistance?</b><p>View accessible help and guidance.</p><button type="button">Open help</button></div>
-      <div className="sidebar-user"><span>{data.initials}</span><div><b>{data.person}</b><small>{data.label}</small></div><i aria-hidden="true">⋮</i></div>
+      <div className="sidebar-user"><span>{accountInitials}</span><div><b>{accountName}</b><small>{data.label}</small></div><i aria-hidden="true">⋮</i></div>
     </aside>
   );
 }
@@ -292,30 +298,29 @@ function ContentOperations({ role, onBack }: { role: "representative" | "admin";
   );
 }
 
-export function StakeholderWorkspace({ accountName }: { accountName: string }) {
-  const [role, setRole] = useState<Role>("user");
+export function StakeholderWorkspace({ accountName, accountRole }: { accountName: string; accountRole: AccountRole }) {
+  const role = workspaceRole[accountRole];
   const [view, setView] = useState<WorkspaceView>("dashboard");
   const data = roleData[role];
   const activities = activityByRole[role];
   const nextActions = nextActionsByRole[role];
+  const accountInitials = accountName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "BC";
+  const firstName = accountName.trim().split(/\s+/)[0] || "Member";
 
   return (
     <div className="workspace-page">
-      <Sidebar role={role} />
+      <Sidebar role={role} accountName={accountName} accountInitials={accountInitials} />
       <main id="main-content" className="workspace-main">
         <header className="workspace-topbar">
-          <div><small>Viewing as</small><strong>{data.label}</strong></div>
-          <div className="role-switcher" role="group" aria-label="Switch stakeholder role">
-            {(Object.keys(roleData) as Role[]).map((key) => <button type="button" className={role === key ? "active" : ""} aria-pressed={role === key} onClick={() => { setRole(key); setView("dashboard"); }} key={key}>{roleData[key].label.replace("B-SCAN ", "")}</button>)}
-          </div>
+          <div><small>Signed in as</small><strong>{data.label}</strong></div>
           <AccessibilityTools />
           <Link className="top-icon" href="/workspace/notifications" aria-label="Open notifications">♢</Link>
-          <div className="top-avatar" title={accountName}>{data.initials}</div>
+          <div className="top-avatar" title={accountName}>{accountInitials}</div>
         </header>
 
         <div className="workspace-content">
           {view === "content" && (role === "representative" || role === "admin") ? <ContentOperations key={role} role={role} onBack={() => setView("dashboard")} /> : <>
-          <div className="workspace-title-row"><div><p className="workspace-kicker">Dashboard overview</p><h1>{data.greeting}</h1><p>{data.subtitle}</p></div>{role === "user" ? <Link className="button" href="/workspace/profile">Complete my profile →</Link> : <button className="button" type="button" onClick={() => (role === "representative" || role === "admin") && setView("content")}>{role === "officer" ? "Review new referrals" : role === "representative" ? "Manage listings" : "Open approval queue"} →</button>}</div>
+          <div className="workspace-title-row"><div><p className="workspace-kicker">Dashboard overview</p><h1>{role === "user" ? `Welcome, ${firstName}` : data.greeting}</h1><p>{data.subtitle}</p></div>{role === "user" ? <Link className="button" href="/workspace/profile">Complete my profile →</Link> : <button className="button" type="button" onClick={() => (role === "representative" || role === "admin") && setView("content")}>{role === "officer" ? "Review new referrals" : role === "representative" ? "Manage listings" : "Open approval queue"} →</button>}</div>
           <div className="workspace-stats">
             {data.stats.map((stat, index) => <article key={stat.label}><div className={`workspace-stat-symbol ${stat.tone ?? ""}`} aria-hidden="true">{["◔","✦","↗","▤"][index]}</div><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.detail}</small></article>)}
           </div>
